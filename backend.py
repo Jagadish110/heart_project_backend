@@ -1,121 +1,192 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import psycopg2
 from fastapi.middleware.cors import CORSMiddleware
-import pymysql, os, hashlib, pickle
+import pickle
 import numpy as np
 
+# Load the model
+model = pickle.load(open("heart_webpage.pkl", "rb"))
+
+# Initialize FastAPI app
 app = FastAPI()
 
-
-# CORS
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
-# Database connection
-import psycopg2
-
+# PostgreSQL connection settings (Render DB credentials)
 def get_db():
     return psycopg2.connect(
-        host="dpg-d26vljggjchc73en01s0-a",
-        user="heart_database_tx6b_user",
-        password="FsIhdoLR6I6iz1PzNycw7tcLwHBFW6bT",
-        database="heart_database_tx6b",
-        port=5432
+        host="dpg-cnsnm4ocn0vc73bl4gm0-a.singapore-postgres.render.com",
+        database="hotdb",
+        user="hotdb_user",
+        password="YmzCekSCLFSPdo1uw3xvBUmdU4cljKm1"
     )
 
+# Pydantic models
+class InputData(BaseModel):
+    email: str
+    age: int
+    sex: int
+    Chest_Pain: int
+    Resting_Blood_Pressure: int
+    Cholesterol: int
+    Fasting_Blood_Sugar: int
+    Resting_ECG_Results: int
+    Maximum_Heart_Rate_Achieved: int
+    Chest_Pain_During_Exercise: int
+    ST_depression_level: float
+    Slope_of_ST_segment: int
 
-# Hashing
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-# Models
-class Register(BaseModel):
+class User(BaseModel):
     username: str
     email: str
     password: str
 
-class Login(BaseModel):
-    username: str
+class LoginRequest(BaseModel):
+    email: str
     password: str
 
-class HeartDisease(BaseModel):
-    user_id: int
-    age: int 
-    sex: int  
-    cp: int 
-    trestbps: int 
-    chol: int 
-    fbs: int 
-    restecg: int 
-    thalach: int
-    exang: int 
-    oldpeak: float 
-    slope: int
+# Create necessary tables
+def create_tables():
+    conn = get_db()
+    cursor = conn.cursor()
 
-# Routes
-@app.post("/register")
-def register_user(user: Register):
-    try:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM users WHERE email=%s", (user.email,))
-        if cursor.fetchone():
-            raise HTTPException(status_code=400, detail="User already exists")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) NOT NULL,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            password VARCHAR(100) NOT NULL
+        );
+    """)
 
-        cursor.execute(
-            "INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
-            (user.username, user.email, user.password)
-        )
-        db.commit()
-        return {"message": "User registered successfully"}
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_inputs (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            age INTEGER,
+            sex INTEGER,
+            Chest_Pain INTEGER,
+            Resting_Blood_Pressure INTEGER,
+            Cholesterol INTEGER,
+            Fasting_Blood_Sugar INTEGER,
+            Resting_ECG_Results INTEGER,
+            Maximum_Heart_Rate_Achieved INTEGER,
+            Chest_Pain_During_Exercise INTEGER,
+            ST_depression_level FLOAT,
+            Slope_of_ST_segment INTEGER,
+            prediction_result INTEGER,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        );
+    """)
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))  # <- Important
-
-
-@app.post("/login")
-def login(user: Login):
-    db = get_db()
-    cursor = db.cursor()
-    hashed = hash_password(user.password)
-    cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (user.username, hashed))
-    data = cursor.fetchone()
+    conn.commit()
     cursor.close()
-    db.close()
-    if data:
-        return {"message": "Login success", "user_id": data["id"]}
-    else:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    conn.close()
+
+# Create tables when app starts
+@app.on_event("startup")
+def on_startup():
+    create_tables()
+
+# API Endpoints
+@app.get("/")
+def read_root():
+    return {"message": "Heart Disease Predictor API is Running."}
 
 @app.post("/predict")
-def predict(data: HeartDisease):
-    with open("heart_webpage.pkl", "rb") as f:
-        model = pickle.load(f)
+def predict(data: InputData):
+    conn = get_db()
+    cursor = conn.cursor()
 
-    input_data = [data.age, data.sex, data.cp, data.trestbps, data.chol, data.fbs,
-                  data.restecg, data.thalach, data.exang, data.oldpeak, data.slope]
-    
-    prediction = model.predict([input_data])[0]
+    # Check user by email
+    cursor.execute("SELECT id FROM users WHERE email=%s", (data.email,))
+    user = cursor.fetchone()
 
-    # Save input + prediction
-    db = get_db()
-    cursor = db.cursor()
-    sql = """
+    if user is None:
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_id = user[0]
+
+    input_features = np.array([[
+        data.age, data.sex, data.Chest_Pain,
+        data.Resting_Blood_Pressure, data.Cholesterol,
+        data.Fasting_Blood_Sugar, data.Resting_ECG_Results,
+        data.Maximum_Heart_Rate_Achieved, data.Chest_Pain_During_Exercise,
+        data.ST_depression_level, data.Slope_of_ST_segment
+    ]])
+
+    prediction = model.predict(input_features)
+    prediction_result = int(prediction[0])
+
+    # Save input and prediction to DB
+    cursor.execute("""
         INSERT INTO user_inputs (
             user_id, age, sex, Chest_Pain, Resting_Blood_Pressure, Cholesterol,
             Fasting_Blood_Sugar, Resting_ECG_Results, Maximum_Heart_Rate_Achieved,
-            Chest_Pain_During_Exercise, ST_depression_level, Slope_of_ST_segment, prediction_result
+            Chest_Pain_During_Exercise, ST_depression_level, Slope_of_ST_segment,
+            prediction_result
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
-    cursor.execute(sql, (data.user_id, *input_data, prediction))
-    db.commit()
+    """, (
+        user_id, data.age, data.sex, data.Chest_Pain, data.Resting_Blood_Pressure,
+        data.Cholesterol, data.Fasting_Blood_Sugar, data.Resting_ECG_Results,
+        data.Maximum_Heart_Rate_Achieved, data.Chest_Pain_During_Exercise,
+        data.ST_depression_level, data.Slope_of_ST_segment,
+        prediction_result
+    ))
+
+    conn.commit()
     cursor.close()
-    db.close()
+    conn.close()
 
-    return {"prediction": int(prediction)}
+    return {"prediction": prediction_result}
 
+@app.post("/register")
+def register(user: User):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Check if email already exists
+    cursor.execute("SELECT * FROM users WHERE email=%s", (user.email,))
+    if cursor.fetchone():
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    cursor.execute(
+        "INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+        (user.username, user.email, user.password)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return {"message": "User registered successfully"}
+
+@app.post("/login")
+def login(req: LoginRequest):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM users WHERE email=%s AND password=%s",
+        (req.email, req.password)
+    )
+
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    return {"message": "Login successful", "email": req.email}
