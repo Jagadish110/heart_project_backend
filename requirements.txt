@@ -1,6 +1,8 @@
 fastapi
+pymysql
 uvicorn
 scikit-learn
 joblib
 pydantic
 numpy
+
