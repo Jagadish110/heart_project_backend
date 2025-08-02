@@ -23,11 +23,11 @@ app.add_middleware(
 # PostgreSQL connection settings (Render DB credentials)
 def get_db():
     return psycopg2.connect(
-        host=dpg-d26vljggjchc73en01s0-a,
-        database=heart_database_tx6b,
-        user=heart_database_tx6b_user,
-        password=FsIhdoLR6I6iz1PzNycw7tcLwHBFW6bT,
-        port=5432,
+        host="dpg-d26vljggjchc73en01s0-a",
+        database="heart_database_tx6b",
+        user="heart_database_tx6b_user",
+        password="FsIhdoLR6I6iz1PzNycw7tcLwHBFW6bT",
+        port="5432",
          sslmode="require" 
         
     )
@@ -193,4 +193,5 @@ def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     return {"message": "Login successful", "email": req.email}
+
 
