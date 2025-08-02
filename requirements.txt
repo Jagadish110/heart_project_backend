@@ -4,5 +4,7 @@ uvicorn
 scikit-learn
 joblib
 pydantic
+psycopg2
 numpy
+
 
