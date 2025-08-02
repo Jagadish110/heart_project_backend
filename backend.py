@@ -23,10 +23,13 @@ app.add_middleware(
 # PostgreSQL connection settings (Render DB credentials)
 def get_db():
     return psycopg2.connect(
-        host="dpg-cnsnm4ocn0vc73bl4gm0-a.singapore-postgres.render.com",
-        database="hotdb",
-        user="hotdb_user",
-        password="YmzCekSCLFSPdo1uw3xvBUmdU4cljKm1"
+        host=dpg-d26vljggjchc73en01s0-a,
+        database=heart_database_tx6b,
+        user=heart_database_tx6b_user,
+        password=FsIhdoLR6I6iz1PzNycw7tcLwHBFW6bT,
+        port=5432,
+         sslmode="require" 
+        
     )
 
 # Pydantic models
@@ -190,3 +193,4 @@ def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     return {"message": "Login successful", "email": req.email}
+
