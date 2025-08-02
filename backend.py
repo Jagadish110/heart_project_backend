@@ -17,14 +17,17 @@ app.add_middleware(
 )
 
 # Database connection
+import psycopg2
+
 def get_db():
-    return pymysql.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        user=os.getenv("DB_USER", "jagadish"),
-        password=os.getenv("DB_PASSWORD", "jaga6300"),
-        database=os.getenv("DB_NAME", "heart_database"),
-        cursorclass=pymysql.cursors.DictCursor
+    return psycopg2.connect(
+        host="dpg-d26vljggjchc73en01s0-a",
+        user="heart_database_tx6b_user",
+        password="FsIhdoLR6I6iz1PzNycw7tcLwHBFW6bT",
+        database="heart_database_tx6b",
+        port=5432
     )
+
 
 # Hashing
 def hash_password(password):
@@ -115,3 +118,4 @@ def predict(data: HeartDisease):
     db.close()
 
     return {"prediction": int(prediction)}
+
