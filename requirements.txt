@@ -6,5 +6,7 @@ joblib
 pydantic
 psycopg2
 numpy
+passlib[bcrypt] 
+
 
 
