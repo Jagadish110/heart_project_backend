@@ -32,10 +32,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Database connection setup (update with your real DB credentials)
 def get_db():
     return psycopg2.connect(
-        host="dpg-d27kph15pdvs73fnfch0-a",
-        database="heart_database_s4wn",
-        user="heart_database_s4wn_user",
-        password="ewWG5J0R9z6SUvMCcxAdcRgHhhxzdbRb",
+        host="dpg-d27m2cggjchc738d5jh0-a",
+        database="heart_database_bq6z",
+        user="heart_database_bq6z_user",
+        password="0o9urWJRM7SUw6cAy2Udad7WFrCrp8Mn",
         port="5432",
         sslmode="require"
     )
@@ -72,7 +72,7 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username VARCHAR(50) NOT NULL UNIQUE,
-            email VARCHAR(100) NOT NULL,
+            email VARCHAR(100) NOT NULL UNIQUE,
             password VARCHAR(100) NOT NULL
         );
     """)
@@ -178,3 +178,4 @@ def predict(data: InputData):
         cursor.close()
         conn.close()
     return {"prediction": prediction_result}
+
