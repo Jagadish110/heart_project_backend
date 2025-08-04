@@ -32,12 +32,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Database connection setup (update with your real DB credentials)
 def get_db():
     return psycopg2.connect(
-        host="dpg-d27m2cggjchc738d5jh0-a",
-        database="heart_database_bq6z",
-        user="heart_database_bq6z_user",
-        password="0o9urWJRM7SUw6cAy2Udad7WFrCrp8Mn",
-        port="5432",
-        sslmode="require"
+        host="db.clhbqtlbosuarcfvnchn.supabase.co",
+        database="postgres",
+        user="postgres",
+        password="jagadish6300",
+        port="5432"
+       
     )
 
 # Pydantic models
@@ -178,4 +178,5 @@ def predict(data: InputData):
         cursor.close()
         conn.close()
     return {"prediction": prediction_result}
+
 
