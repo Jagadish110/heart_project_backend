@@ -31,16 +31,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # Database connection setup (update with your real DB credentials)
 def get_db():
+    import os, psycopg2
     return psycopg2.connect(
-        host="db.clhbqtlbosuarcfvnchn.supabase.co",
-        database="postgres",
-        user="postgres",
-        password="jagadish6300",
-        port="6543",
+        os.environ["DATABASE_URL"],     # full URL from Render/Supabase
         sslmode="require"
+    )
         
        
-    )
+    
 
 # Pydantic models
 class InputData(BaseModel):
@@ -180,6 +178,7 @@ def predict(data: InputData):
         cursor.close()
         conn.close()
     return {"prediction": prediction_result}
+
 
 
 
