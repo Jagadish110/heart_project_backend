@@ -36,7 +36,9 @@ def get_db():
         database="postgres",
         user="postgres",
         password="jagadish6300",
-        port="5432"
+        port="6543",
+        sslmode="require"
+        
        
     )
 
@@ -178,5 +180,6 @@ def predict(data: InputData):
         cursor.close()
         conn.close()
     return {"prediction": prediction_result}
+
 
 
