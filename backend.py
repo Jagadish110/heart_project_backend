@@ -32,11 +32,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Database connection setup (update with your real DB credentials)
 def get_db():
     import os, psycopg2
-    return psycopg2.connect(
-        os.environ["DATABASE_URL"],     # full URL from Render/Supabase
-        sslmode="require"
-    )
-        
+    db_url = os.environ["DATABASE_URL"]
+    # psycopg2 expects postgresql:// not postgres://
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    return psycopg2.connect(db_url, sslmode="require")
+
        
     
 
@@ -178,6 +179,7 @@ def predict(data: InputData):
         cursor.close()
         conn.close()
     return {"prediction": prediction_result}
+
 
 
 
