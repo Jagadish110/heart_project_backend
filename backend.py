@@ -33,10 +33,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_db():
     import os, psycopg2
     db_url = os.environ["DATABASE_URL"]
-    # psycopg2 expects postgresql:// not postgres://
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-    return psycopg2.connect(db_url, sslmode="require")
+    return psycopg2.connect(db_url)
+
 
        
     
@@ -179,6 +179,7 @@ def predict(data: InputData):
         cursor.close()
         conn.close()
     return {"prediction": prediction_result}
+
 
 
 
