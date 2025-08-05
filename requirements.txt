@@ -1,12 +1,13 @@
 fastapi
 pymysql
-uvicorn
 scikit-learn
 joblib
 pydantic
 psycopg2
 numpy
 passlib[bcrypt] 
+uvicorn
+
 
 
 
